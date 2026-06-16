@@ -3,6 +3,7 @@ package com.markalon.app
 import android.content.Context
 import android.net.Uri
 import android.provider.OpenableColumns
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
@@ -71,6 +72,12 @@ fun MarkalonApp(vm: MarkalonViewModel = viewModel()) {
                     vm.showToast("Exported ${sanitizeFileName(note.title)}.md")
                 }
             }
+        }
+
+        // System back: on the Editor, return to the Library instead of exiting the app.
+        // (The Settings sheet and overflow menu handle their own back-dismiss.)
+        BackHandler(enabled = state.screen == Screen.EDITOR && !state.settingsOpen) {
+            vm.back()
         }
 
         Box(Modifier.fillMaxSize().background(colors.bg)) {
