@@ -20,15 +20,19 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.FileOpen
+import androidx.compose.material.icons.filled.Label
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -80,9 +84,11 @@ fun EditorScreen(
     onExport: () -> Unit,
     onSettings: () -> Unit,
     onDelete: () -> Unit,
+    onSetCategory: (String?) -> Unit,
 ) {
     val colors = LocalMarkalonColors.current
     val bodyFont = settings.editorFont.toFontFamily()
+    var showCategoryPicker by remember { mutableStateOf(false) }
 
     // Local editor text state, reseeded when switching notes.
     // Local editor text state, reseeded when switching notes. Undo/redo replace
@@ -121,6 +127,7 @@ fun EditorScreen(
             onExport = onExport,
             onSettings = onSettings,
             onDelete = onDelete,
+            onCategory = { showCategoryPicker = true },
         )
 
         when (view) {
@@ -160,6 +167,65 @@ fun EditorScreen(
             )
         }
     }
+
+    if (showCategoryPicker) {
+        CategoryPickerDialog(
+            categories = settings.categories,
+            current = note.category,
+            onPick = { onSetCategory(it); showCategoryPicker = false },
+            onDismiss = { showCategoryPicker = false },
+        )
+    }
+}
+
+@Composable
+private fun CategoryPickerDialog(
+    categories: List<String>,
+    current: String?,
+    onPick: (String?) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val colors = LocalMarkalonColors.current
+    val accent = LocalAccent.current
+
+    @Composable
+    fun Option(label: String, value: String?) {
+        val selected = value == current
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable { onPick(value) }
+                .padding(vertical = 11.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                label,
+                color = if (selected) accent else colors.fg1,
+                fontFamily = UiFontFamily,
+                fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
+                fontSize = 15.sp,
+                modifier = Modifier.weight(1f),
+            )
+            if (selected) {
+                Icon(Icons.Filled.Check, contentDescription = null, tint = accent, modifier = Modifier.size(18.dp))
+            }
+        }
+    }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = colors.surface,
+        title = { Text("Category", color = colors.fg1, fontFamily = UiFontFamily, fontWeight = FontWeight.Bold) },
+        text = {
+            Column {
+                Option("None", null)
+                categories.forEach { Option(it, it) }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) { Text("Close", color = accent, fontFamily = UiFontFamily) }
+        },
+    )
 }
 
 @Composable
@@ -239,6 +305,7 @@ private fun EditorTopBar(
     onExport: () -> Unit,
     onSettings: () -> Unit,
     onDelete: () -> Unit,
+    onCategory: () -> Unit,
 ) {
     val colors = LocalMarkalonColors.current
     var titleValue by remember(noteId) {
@@ -275,6 +342,7 @@ private fun EditorTopBar(
                     onExport = onExport,
                     onSettings = onSettings,
                     onDelete = onDelete,
+                    onCategory = onCategory,
                 )
             }
         }
@@ -327,6 +395,7 @@ private fun OverflowMenu(
     onExport: () -> Unit,
     onSettings: () -> Unit,
     onDelete: () -> Unit,
+    onCategory: () -> Unit,
 ) {
     val colors = LocalMarkalonColors.current
     DropdownMenu(
@@ -334,6 +403,7 @@ private fun OverflowMenu(
         onDismissRequest = onDismiss,
         modifier = Modifier.background(colors.surface),
     ) {
+        MenuRow(Icons.Filled.Label, "Category…", colors.fg1) { onDismiss(); onCategory() }
         MenuRow(Icons.Filled.FileOpen, "Open from device", colors.fg1) { onDismiss(); onImport() }
         MenuRow(Icons.Filled.Download, "Export as .md", colors.fg1) { onDismiss(); onExport() }
         MenuRow(Icons.Filled.Settings, "Settings", colors.fg1) { onDismiss(); onSettings() }

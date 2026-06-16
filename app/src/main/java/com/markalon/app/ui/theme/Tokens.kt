@@ -2,6 +2,7 @@ package com.markalon.app.ui.theme
 
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 
 /** Semantic color tokens, one set per theme (see handoff "Design Tokens"). */
 data class MarkalonColors(
@@ -50,10 +51,21 @@ val LocalAccent = staticCompositionLocalOf { Color(0xFFD8623C) }
 /** Parse a "#RRGGBB" hex string into a Compose Color. */
 fun hexColor(hex: String): Color {
     val clean = hex.removePrefix("#")
-    val value = clean.toLong(16)
+    val value = runCatching { clean.toLong(16) }.getOrNull() ?: return Color(0xFFD8623C)
     return when (clean.length) {
         6 -> Color(0xFF000000L or value)
         8 -> Color(value)
         else -> Color(0xFFD8623C)
     }
+}
+
+/** Render a Color as an upper-case "#RRGGBB" string (alpha dropped). */
+fun Color.toHexString(): String = "#%06X".format(0xFFFFFF and toArgb())
+
+/** Convert a hex color to HSV components [hue 0..360, saturation 0..1, value 0..1]. */
+fun hexToHsv(hex: String): FloatArray {
+    val argb = hexColor(hex).toArgb()
+    val hsv = FloatArray(3)
+    android.graphics.Color.colorToHSV(argb, hsv)
+    return hsv
 }

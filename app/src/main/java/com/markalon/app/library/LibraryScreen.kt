@@ -29,7 +29,10 @@ import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -60,9 +63,17 @@ fun LibraryScreen(
     onNewNote: () -> Unit,
     onImport: () -> Unit,
     onSettings: () -> Unit,
+    categories: List<String>,
+    selectedCategory: String?,
+    onSelectCategory: (String?) -> Unit,
+    onAddCategory: (String) -> Unit,
+    onRenameCategory: (String, String) -> Unit,
+    onDeleteCategory: (String) -> Unit,
 ) {
     val colors = LocalMarkalonColors.current
     val accent = LocalAccent.current
+    var showAddCategory by remember { mutableStateOf(false) }
+    var showManageCategories by remember { mutableStateOf(false) }
 
     Box(Modifier.fillMaxSize().background(colors.bg)) {
         Column(Modifier.fillMaxSize()) {
@@ -110,6 +121,14 @@ fun LibraryScreen(
                             fontSize = 13.5f.sp,
                             modifier = Modifier.padding(top = 2.dp, bottom = 14.dp),
                         )
+                        CategoryBar(
+                            categories = categories,
+                            selected = selectedCategory,
+                            onSelect = onSelectCategory,
+                            onAdd = { showAddCategory = true },
+                            onManage = { showManageCategories = true },
+                        )
+                        Spacer(Modifier.size(12.dp))
                         SearchField(search, onSearch)
                         Spacer(Modifier.size(11.dp))
                     }
@@ -144,6 +163,21 @@ fun LibraryScreen(
             contentAlignment = Alignment.Center,
         ) {
             Icon(Icons.Filled.Add, contentDescription = "New note", tint = Color.White, modifier = Modifier.size(26.dp))
+        }
+
+        if (showAddCategory) {
+            AddCategoryDialog(
+                onConfirm = onAddCategory,
+                onDismiss = { showAddCategory = false },
+            )
+        }
+        if (showManageCategories) {
+            ManageCategoriesDialog(
+                categories = categories,
+                onRename = onRenameCategory,
+                onDelete = onDeleteCategory,
+                onDismiss = { showManageCategories = false },
+            )
         }
     }
 }
@@ -239,8 +273,12 @@ private fun DocCard(note: Note, onClick: () -> Unit) {
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.padding(top = 5.dp),
         )
+        val meta = buildString {
+            append("${relativeTime(note.updated)}  ·  ${wordCount(note.body)} words")
+            note.category?.let { append("  ·  $it") }
+        }
         Text(
-            "${relativeTime(note.updated)}  ·  ${wordCount(note.body)} words",
+            meta,
             color = colors.fg3,
             fontFamily = UiFontFamily,
             fontSize = 12.sp,
