@@ -27,13 +27,22 @@ import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.LightMode
+import androidx.compose.material.icons.filled.Palette
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.Slider
+import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -57,7 +66,9 @@ import com.markalon.app.ui.theme.LocalAccent
 import com.markalon.app.ui.theme.LocalMarkalonColors
 import com.markalon.app.ui.theme.UiFontFamily
 import com.markalon.app.ui.theme.hexColor
+import com.markalon.app.ui.theme.hexToHsv
 import com.markalon.app.ui.theme.toFontFamily
+import com.markalon.app.ui.theme.toHexString
 
 @OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 @Composable
@@ -170,6 +181,9 @@ private fun ThemeControl(selected: ThemeMode, onSelect: (ThemeMode) -> Unit) {
 @Composable
 private fun AccentSwatches(selectedHex: String, onSelect: (String) -> Unit) {
     val colors = LocalMarkalonColors.current
+    val isPreset = Accents.ALL.any { it.hex.equals(selectedHex, ignoreCase = true) }
+    var showCustom by remember { mutableStateOf(false) }
+
     FlowRow(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -195,6 +209,102 @@ private fun AccentSwatches(selectedHex: String, onSelect: (String) -> Unit) {
                 }
             }
         }
+
+        // Custom color swatch: shows the current custom color (when not a preset),
+        // otherwise a palette affordance. Tapping opens the picker.
+        val customSelected = !isPreset
+        Box(
+            modifier = Modifier
+                .size(42.dp)
+                .clip(CircleShape)
+                .background(if (customSelected) hexColor(selectedHex) else colors.surface2)
+                .border(
+                    width = 2.dp,
+                    color = if (customSelected) colors.fg1 else colors.border,
+                    shape = CircleShape,
+                )
+                .clickable { showCustom = true },
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                if (customSelected) Icons.Filled.Check else Icons.Filled.Palette,
+                contentDescription = "Custom color",
+                tint = if (customSelected) Color.White else colors.fg2,
+                modifier = Modifier.size(20.dp),
+            )
+        }
+    }
+
+    if (showCustom) {
+        CustomColorDialog(
+            initialHex = selectedHex,
+            onConfirm = { onSelect(it); showCustom = false },
+            onDismiss = { showCustom = false },
+        )
+    }
+}
+
+@Composable
+private fun CustomColorDialog(
+    initialHex: String,
+    onConfirm: (String) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val colors = LocalMarkalonColors.current
+    val initialHsv = remember(initialHex) { hexToHsv(initialHex) }
+    var hue by remember { mutableFloatStateOf(initialHsv[0]) }
+    var sat by remember { mutableFloatStateOf(initialHsv[1]) }
+    var value by remember { mutableFloatStateOf(initialHsv[2]) }
+
+    val current = Color.hsv(hue, sat, value)
+    val hex = current.toHexString()
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = colors.surface,
+        title = { Text("Custom color", color = colors.fg1, fontFamily = UiFontFamily, fontWeight = FontWeight.Bold) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        Modifier.size(44.dp).clip(CircleShape).background(current)
+                            .border(1.dp, colors.border, CircleShape)
+                    )
+                    Spacer(Modifier.size(12.dp))
+                    Text(hex, color = colors.fg2, fontFamily = UiFontFamily, fontSize = 15.sp)
+                }
+                ColorSlider("Hue", hue, 0f, 360f) { hue = it }
+                ColorSlider("Saturation", sat, 0f, 1f) { sat = it }
+                ColorSlider("Brightness", value, 0f, 1f) { value = it }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = { onConfirm(hex); onDismiss() }) {
+                Text("Use color", color = current, fontFamily = UiFontFamily, fontWeight = FontWeight.SemiBold)
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("Cancel", color = colors.fg2, fontFamily = UiFontFamily) }
+        },
+    )
+}
+
+@Composable
+private fun ColorSlider(label: String, value: Float, min: Float, max: Float, onChange: (Float) -> Unit) {
+    val colors = LocalMarkalonColors.current
+    val accent = LocalAccent.current
+    Column {
+        Text(label, color = colors.fg3, fontFamily = UiFontFamily, fontSize = 12.5f.sp)
+        Slider(
+            value = value,
+            onValueChange = onChange,
+            valueRange = min..max,
+            colors = SliderDefaults.colors(
+                thumbColor = accent,
+                activeTrackColor = accent,
+                inactiveTrackColor = colors.surface2,
+            ),
+        )
     }
 }
 
