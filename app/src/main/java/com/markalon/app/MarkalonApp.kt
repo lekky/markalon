@@ -8,6 +8,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.systemBarsPadding
@@ -73,7 +74,7 @@ fun MarkalonApp(vm: MarkalonViewModel = viewModel()) {
         }
 
         Box(Modifier.fillMaxSize().background(colors.bg)) {
-            Box(Modifier.fillMaxSize().systemBarsPadding()) {
+            Box(Modifier.fillMaxSize().systemBarsPadding().imePadding()) {
             if (state.loaded) {
                 when (state.screen) {
                     Screen.LIBRARY -> LibraryScreen(

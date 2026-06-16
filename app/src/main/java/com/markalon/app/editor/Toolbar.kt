@@ -1,12 +1,12 @@
 package com.markalon.app.editor
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -14,13 +14,14 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.FormatListBulleted
-import androidx.compose.material.icons.automirrored.filled.FormatListNumbered
-import androidx.compose.material.icons.automirrored.filled.Redo
-import androidx.compose.material.icons.automirrored.filled.Undo
+import androidx.compose.material.icons.filled.FormatListBulleted
+import androidx.compose.material.icons.filled.FormatListNumbered
+import androidx.compose.material.icons.filled.Redo
+import androidx.compose.material.icons.filled.Undo
 import androidx.compose.material.icons.filled.Checklist
 import androidx.compose.material.icons.filled.HorizontalRule
 import androidx.compose.material.icons.filled.TableChart
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -74,13 +75,13 @@ fun ToolIcon(tool: Tool, tint: Color, glyphSize: Int = 14) {
         Tool.CODE -> glyph("</>", family = CodeFontFamily, sizeSp = 11)
         Tool.CODEBLOCK -> glyph("{ }", family = CodeFontFamily, sizeSp = 13)
         Tool.QUOTE -> glyph("“", family = FontFamily.Serif, sizeSp = 20)
-        Tool.UL -> Icon(Icons.AutoMirrored.Filled.FormatListBulleted, null, tint = tint, modifier = Modifier.size(20.dp))
-        Tool.OL -> Icon(Icons.AutoMirrored.Filled.FormatListNumbered, null, tint = tint, modifier = Modifier.size(20.dp))
+        Tool.UL -> Icon(Icons.Filled.FormatListBulleted, null, tint = tint, modifier = Modifier.size(20.dp))
+        Tool.OL -> Icon(Icons.Filled.FormatListNumbered, null, tint = tint, modifier = Modifier.size(20.dp))
         Tool.TASK -> Icon(Icons.Filled.Checklist, null, tint = tint, modifier = Modifier.size(20.dp))
         Tool.TABLE -> Icon(Icons.Filled.TableChart, null, tint = tint, modifier = Modifier.size(19.dp))
         Tool.HR -> Icon(Icons.Filled.HorizontalRule, null, tint = tint, modifier = Modifier.size(20.dp))
-        Tool.UNDO -> Icon(Icons.AutoMirrored.Filled.Undo, null, tint = tint, modifier = Modifier.size(20.dp))
-        Tool.REDO -> Icon(Icons.AutoMirrored.Filled.Redo, null, tint = tint, modifier = Modifier.size(20.dp))
+        Tool.UNDO -> Icon(Icons.Filled.Undo, null, tint = tint, modifier = Modifier.size(20.dp))
+        Tool.REDO -> Icon(Icons.Filled.Redo, null, tint = tint, modifier = Modifier.size(20.dp))
     }
 }
 
@@ -93,25 +94,26 @@ fun InsertToolbar(
 ) {
     val colors = LocalMarkalonColors.current
     val enabled = toolbar.filter { it.enabled }.mapNotNull { Tool.fromId(it.id) }
-    Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .background(colors.surface)
-            .border(width = 1.dp, color = colors.border, shape = RoundedCornerShape(0.dp))
-            .horizontalScroll(rememberScrollState())
-            .padding(horizontal = 10.dp, vertical = 7.dp),
-        horizontalArrangement = Arrangement.spacedBy(3.dp),
-    ) {
-        enabled.forEach { tool ->
-            val interaction = remember { MutableInteractionSource() }
-            Box(
-                modifier = Modifier
-                    .size(39.dp)
-                    .clip(RoundedCornerShape(10.dp))
-                    .clickable(interactionSource = interaction, indication = null) { onTool(tool) },
-                contentAlignment = Alignment.Center,
-            ) {
-                ToolIcon(tool, tint = colors.fg2)
+    Column(modifier.fillMaxWidth().background(colors.surface)) {
+        HorizontalDivider(thickness = 1.dp, color = colors.border)
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .horizontalScroll(rememberScrollState())
+                .padding(horizontal = 10.dp, vertical = 7.dp),
+            horizontalArrangement = Arrangement.spacedBy(3.dp),
+        ) {
+            enabled.forEach { tool ->
+                val interaction = remember { MutableInteractionSource() }
+                Box(
+                    modifier = Modifier
+                        .size(39.dp)
+                        .clip(RoundedCornerShape(10.dp))
+                        .clickable(interactionSource = interaction, indication = null) { onTool(tool) },
+                    contentAlignment = Alignment.Center,
+                ) {
+                    ToolIcon(tool, tint = colors.fg2)
+                }
             }
         }
     }
