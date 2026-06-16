@@ -93,6 +93,12 @@ fun MarkalonApp(vm: MarkalonViewModel = viewModel()) {
                         onNewNote = vm::newNote,
                         onImport = { importLauncher.launch(arrayOf("text/*")) },
                         onSettings = vm::openSettings,
+                        categories = state.categories,
+                        selectedCategory = state.selectedCategory,
+                        onSelectCategory = vm::selectCategory,
+                        onAddCategory = vm::addCategory,
+                        onRenameCategory = vm::renameCategory,
+                        onDeleteCategory = vm::deleteCategory,
                     )
 
                     Screen.EDITOR -> {
@@ -116,6 +122,7 @@ fun MarkalonApp(vm: MarkalonViewModel = viewModel()) {
                                 onExport = { exportLauncher.launch("${sanitizeFileName(note.title)}.md") },
                                 onSettings = vm::openSettings,
                                 onDelete = vm::deleteActiveNote,
+                                onSetCategory = vm::setActiveNoteCategory,
                             )
                         }
                     }

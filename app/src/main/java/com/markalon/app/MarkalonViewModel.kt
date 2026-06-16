@@ -32,17 +32,25 @@ data class MarkalonUiState(
     val menuOpen: Boolean = false,
     val saved: Boolean = true,
     val toast: String? = null,
+    /** Active category filter on the Library; null = "All". */
+    val selectedCategory: String? = null,
 ) {
     val activeNote: Note? get() = notes.firstOrNull { it.id == activeId }
+
+    val categories: List<String> get() = settings.categories
 
     val filteredNotes: List<Note>
         get() {
             val q = search.trim().lowercase()
-            val base = notes.sortedByDescending { it.updated }
-            if (q.isEmpty()) return base
-            return base.filter {
-                it.title.lowercase().contains(q) || it.body.lowercase().contains(q)
-            }
+            val cat = selectedCategory
+            return notes
+                .sortedByDescending { it.updated }
+                .filter { cat == null || it.category == cat }
+                .filter {
+                    q.isEmpty() ||
+                        it.title.lowercase().contains(q) ||
+                        it.body.lowercase().contains(q)
+                }
         }
 }
 
@@ -79,7 +87,16 @@ class MarkalonViewModel(app: Application) : AndroidViewModel(app) {
 
     fun newNote() {
         val now = System.currentTimeMillis()
-        val note = Note(id = "d-" + UUID.randomUUID(), title = "Untitled", body = "", created = now, updated = now)
+        // A note created while a category filter is active inherits that category.
+        val category = _state.value.selectedCategory
+        val note = Note(
+            id = "d-" + UUID.randomUUID(),
+            title = "Untitled",
+            body = "",
+            created = now,
+            updated = now,
+            category = category,
+        )
         _state.update {
             it.copy(
                 notes = listOf(note) + it.notes,
@@ -174,7 +191,14 @@ class MarkalonViewModel(app: Application) : AndroidViewModel(app) {
     fun importNote(name: String, body: String) {
         val now = System.currentTimeMillis()
         val title = name.replace(Regex("\\.(md|markdown|txt)$", RegexOption.IGNORE_CASE), "").ifBlank { "Imported note" }
-        val note = Note(id = "d-" + UUID.randomUUID(), title = title, body = body, created = now, updated = now)
+        val note = Note(
+            id = "d-" + UUID.randomUUID(),
+            title = title,
+            body = body,
+            created = now,
+            updated = now,
+            category = _state.value.selectedCategory,
+        )
         _state.update {
             it.copy(
                 notes = listOf(note) + it.notes,
@@ -211,6 +235,56 @@ class MarkalonViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun setToolbar(toolbar: List<ToolItem>) = updateSettings { it.copy(toolbar = toolbar) }
+
+    // ---------- categories ----------
+    fun selectCategory(category: String?) = _state.update { it.copy(selectedCategory = category) }
+
+    /** Creates a category (no-op if blank or a case-insensitive duplicate). */
+    fun addCategory(name: String) {
+        val trimmed = name.trim()
+        if (trimmed.isEmpty()) return
+        val existing = _state.value.settings.categories
+        if (existing.any { it.equals(trimmed, ignoreCase = true) }) return
+        _state.update { it.copy(settings = it.settings.copy(categories = existing + trimmed)) }
+        persistSettings()
+    }
+
+    /** Renames a category and re-tags every note that used the old name. */
+    fun renameCategory(oldName: String, newName: String) {
+        val trimmed = newName.trim()
+        if (trimmed.isEmpty() || trimmed == oldName) return
+        val existing = _state.value.settings.categories
+        if (existing.any { it.equals(trimmed, ignoreCase = true) && !it.equals(oldName, ignoreCase = true) }) return
+        _state.update { s ->
+            s.copy(
+                settings = s.settings.copy(categories = existing.map { if (it == oldName) trimmed else it }),
+                notes = s.notes.map { if (it.category == oldName) it.copy(category = trimmed) else it },
+                selectedCategory = if (s.selectedCategory == oldName) trimmed else s.selectedCategory,
+            )
+        }
+        persistSettings()
+        persistNotes()
+    }
+
+    /** Deletes a category; notes that used it become uncategorized. */
+    fun deleteCategory(name: String) {
+        _state.update { s ->
+            s.copy(
+                settings = s.settings.copy(categories = s.settings.categories.filterNot { it == name }),
+                notes = s.notes.map { if (it.category == name) it.copy(category = null) else it },
+                selectedCategory = if (s.selectedCategory == name) null else s.selectedCategory,
+            )
+        }
+        persistSettings()
+        persistNotes()
+    }
+
+    /** Sets (or clears, with null) the category of the active note. */
+    fun setActiveNoteCategory(category: String?) {
+        val id = _state.value.activeId ?: return
+        mutateNote(id) { it.copy(category = category) }
+        persistNotes()
+    }
 
     // ---------- helpers ----------
     private inline fun mutateNote(id: String, crossinline transform: (Note) -> Note) {

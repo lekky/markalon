@@ -36,7 +36,8 @@ data class Settings(
     val font: String = EditorFont.MONO.id,
     val defaultView: String = ViewMode.MIXED.id,
     val accent: String = Accents.DEFAULT.hex,
-    val toolbar: List<ToolItem> = defaultToolbar
+    val toolbar: List<ToolItem> = defaultToolbar,
+    val categories: List<String> = emptyList()
 ) {
     val themeMode: ThemeMode get() = ThemeMode.fromId(theme)
     val editorFont: EditorFont get() = EditorFont.fromId(font)
