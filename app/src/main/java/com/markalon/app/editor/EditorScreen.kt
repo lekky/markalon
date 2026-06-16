@@ -3,7 +3,6 @@ package com.markalon.app.editor
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -20,7 +19,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.FileOpen
@@ -193,7 +192,6 @@ private fun EditorTextArea(
             cursorBrush = SolidColor(LocalAccent.current),
             modifier = Modifier
                 .fillMaxSize()
-                .verticalScroll(rememberScrollState())
                 .padding(start = 18.dp, end = 18.dp, top = 18.dp, bottom = 10.dp),
         )
     }
@@ -253,7 +251,7 @@ private fun EditorTopBar(
             .padding(start = 8.dp, end = 8.dp, top = 8.dp, bottom = 10.dp),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            IconBtn(Icons.AutoMirrored.Filled.ArrowBack, "Back", onBack)
+            IconBtn(Icons.Filled.ArrowBack, "Back", onBack)
             Box(Modifier.weight(1f).padding(horizontal = 4.dp)) {
                 if (titleValue.text.isEmpty()) {
                     Text("Untitled", color = colors.fg3, fontFamily = UiFontFamily, fontWeight = FontWeight.SemiBold, fontSize = 17.sp)

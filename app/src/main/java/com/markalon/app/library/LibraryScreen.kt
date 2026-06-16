@@ -20,8 +20,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.FileOpen
 import androidx.compose.material.icons.filled.Search
@@ -223,7 +223,7 @@ private fun DocCard(note: Note, onClick: () -> Unit) {
                 modifier = Modifier.weight(1f),
             )
             Icon(
-                Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                Icons.Filled.KeyboardArrowRight,
                 contentDescription = null,
                 tint = colors.fg3,
                 modifier = Modifier.size(20.dp),
