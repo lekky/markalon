@@ -12,7 +12,7 @@ permissions:
 
 jobs:
   build:
-    name: Build debug APK
+    name: Build APKs
     runs-on: ubuntu-latest
 
     steps:
@@ -36,17 +36,24 @@ jobs:
       - name: Make gradlew executable
         run: chmod +x ./gradlew
 
-      - name: Build debug APK
+      # Compile check on every PR/push: builds both flavors (qaDebug + prodDebug).
+      - name: Build debug APKs
         run: ./gradlew assembleDebug --stacktrace
 
-      - name: Upload APK artifact
+      - name: Upload debug APK artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: markalon-debug-apk
-          path: app/build/outputs/apk/debug/*.apk
+          name: markalon-debug-apks
+          path: app/build/outputs/apk/*/debug/*.apk
           if-no-files-found: error
 
-      # On merge to main, publish the APK as a GitHub Release so it's easy to grab.
+      # On merge to main, build the release variants and publish both as a GitHub Release.
+      # Release builds are signed with MARKALON_KEYSTORE if configured (see repo secrets),
+      # otherwise debug-signed so the APKs are still installable.
+      - name: Build release APKs (prod + qa)
+        if: github.event_name == 'push'
+        run: ./gradlew assembleProdRelease assembleQaRelease --stacktrace
+
       - name: Publish release
         if: github.event_name == 'push'
         uses: softprops/action-gh-release@v2
@@ -54,5 +61,8 @@ jobs:
           tag_name: build-${{ github.run_number }}
           name: Markalon build ${{ github.run_number }}
           body: |
-            Automated debug build from commit ${{ github.sha }}.
-          files: app/build/outputs/apk/debug/*.apk
+            Automated build from commit ${{ github.sha }}.
+
+            - `app-prod-release.apk` — production build (`com.markalon.app`)
+            - `app-qa-release.apk` — QA build (`com.markalon.app.qa`), installs alongside prod
+          files: app/build/outputs/apk/*/release/*.apk

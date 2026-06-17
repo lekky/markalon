@@ -9,6 +9,10 @@ android {
     namespace = "com.markalon.app"
     compileSdk = 35
 
+    // Real release keystore, if one is provided (e.g. by CI secrets). When absent, release
+    // builds fall back to the debug key so the APK is still installable.
+    val releaseKeystore = System.getenv("MARKALON_KEYSTORE")?.let { file(it) }?.takeIf { it.exists() }
+
     defaultConfig {
         applicationId = "com.markalon.app"
         minSdk = 24
@@ -19,6 +23,17 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    signingConfigs {
+        create("release") {
+            if (releaseKeystore != null) {
+                storeFile = releaseKeystore
+                storePassword = System.getenv("MARKALON_KEYSTORE_PASSWORD")
+                keyAlias = System.getenv("MARKALON_KEY_ALIAS")
+                keyPassword = System.getenv("MARKALON_KEY_PASSWORD")
+            }
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = false
@@ -26,8 +41,32 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            // Sign with the real release key when configured, else debug-sign so the
+            // resulting APK is still directly installable.
+            signingConfig = if (releaseKeystore != null)
+                signingConfigs.getByName("release")
+            else
+                signingConfigs.getByName("debug")
         }
     }
+
+    // QA vs prod are product flavors: distinct application id + app name so both can be
+    // installed side by side on one device, each with its own isolated local data.
+    flavorDimensions += "env"
+    productFlavors {
+        create("prod") {
+            dimension = "env"
+            isDefault = true
+            buildConfigField("boolean", "IS_QA", "false")
+        }
+        create("qa") {
+            dimension = "env"
+            applicationIdSuffix = ".qa"   // -> com.markalon.app.qa
+            versionNameSuffix = "-qa"     // -> e.g. 0.1.0-qa
+            buildConfigField("boolean", "IS_QA", "true")
+        }
+    }
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
@@ -37,6 +76,7 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 }
 

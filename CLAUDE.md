@@ -17,16 +17,25 @@ account, no network, no cloud.
 
 Requires the **Android SDK** + JDK 17. The Gradle wrapper is committed.
 
+There are two product flavors — **`prod`** (`com.markalon.app`, "Markalon") and **`qa`**
+(`com.markalon.app.qa`, "Markalon QA", versionName `…-qa`) — so QA and prod install side by
+side with isolated local data. Variant tasks are `{prod,qa}{Debug,Release}`; `BuildConfig.IS_QA`
+distinguishes them at runtime.
+
 ```bash
-./gradlew assembleDebug      # build debug APK -> app/build/outputs/apk/debug/app-debug.apk
-./gradlew installDebug       # build + install on a connected device/emulator
-./gradlew lint               # Android lint
-./gradlew test               # unit tests (none of substance yet)
+./gradlew assembleDebug          # build BOTH flavors' debug APKs (the compile check)
+./gradlew assembleProdRelease    # prod release -> app/build/outputs/apk/prod/release/
+./gradlew assembleQaRelease      # qa release   -> app/build/outputs/apk/qa/release/
+./gradlew installProdDebug       # build + install prod on a connected device/emulator
+./gradlew installQaDebug         # build + install qa (alongside prod)
+./gradlew lint                   # Android lint
+./gradlew test                   # unit tests (none of substance yet)
 ```
 
 There are no unit/instrumentation tests of substance yet — **CI is the compile check**
-(`.github/workflows/android.yml`). It builds the debug APK on PRs to `main` and, on push
-to `main`, publishes the APK as a GitHub Release (tag `build-<run#>`).
+(`.github/workflows/android.yml`). It builds both flavors' debug APKs on PRs to `main` and,
+on push to `main`, publishes the `prod` **and** `qa` release APKs as a GitHub Release
+(tag `build-<run#>`).
 
 ### Environment caveat (important)
 This project is often edited from **Claude Code on the web**, where the container has
@@ -111,6 +120,10 @@ com.markalon.app
   won't change.
 
 ## Git / CI
-- Default branch is `main`. CI builds the APK on PRs and releases it on merge to `main`.
-- The release APK is **debug-signed** (installable, not Play-Store-ready). A release build
-  needs a signing keystore wired into the workflow via repo secrets.
+- Default branch is `main`. CI builds both flavors on PRs and releases the `prod` + `qa`
+  release APKs on merge to `main`.
+- **Signing:** release builds use a real keystore when `MARKALON_KEYSTORE` (path) +
+  `MARKALON_KEYSTORE_PASSWORD` / `MARKALON_KEY_ALIAS` / `MARKALON_KEY_PASSWORD` are present
+  in the environment; otherwise they fall back to the **debug key** (installable, not
+  Play-Store-ready). To ship a real prod build, generate a keystore and provide those four
+  values to the workflow (e.g. decode a base64 repo secret to a file and export the path).
